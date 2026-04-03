@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 
 st.title("🤖 Next Best Action Simulator")
+st.write("This app simulates how AI-driven decisions improve long-term user value compared to rule-based strategies.")
 
 num_users = st.slider("Number of Users", 100, 1000, 500)
 num_days = st.slider("Number of Days", 5, 20, 10)
@@ -86,6 +87,8 @@ if st.button("Run Simulation 🚀"):
     st.subheader("📊 Results")
     st.write(f"AI LTV: {round(ai_ltv,2)}")
     st.write(f"Rule LTV: {round(rule_ltv,2)}")
+    improvement = ((ai_ltv - rule_ltv) / rule_ltv) * 100
+st.write(f"📈 Improvement: {round(improvement,1)}%")
 
     combined = pd.concat([ai_df, rule_df])
     chart = combined.groupby(["day", "strategy"])["cumulative"].mean().reset_index()
