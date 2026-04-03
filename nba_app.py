@@ -88,7 +88,7 @@ if st.button("Run Simulation 🚀"):
     st.write(f"AI LTV: {round(ai_ltv,2)}")
     st.write(f"Rule LTV: {round(rule_ltv,2)}")
     improvement = ((ai_ltv - rule_ltv) / rule_ltv) * 100
-st.write(f"📈 Improvement: {round(improvement,1)}%")
+    st.write(f"📈 Improvement: {round(improvement,1)}%")
 
     combined = pd.concat([ai_df, rule_df])
     chart = combined.groupby(["day", "strategy"])["cumulative"].mean().reset_index()
