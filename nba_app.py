@@ -3,6 +3,16 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
+import pickle
+
+# Load trained model
+with open("nba_model.pkl", "rb") as f:
+    model = pickle.load(f)
+
+# Load feature columns
+with open("columns.pkl", "rb") as f:
+    columns = pickle.load(f)
+
 st.title("🤖 Next Best Action Simulator")
 st.write("This app simulates how AI-driven decisions improve long-term user value compared to rule-based strategies.")
 
@@ -24,6 +34,23 @@ def get_response(user_type, action):
     }
     return np.random.rand() < probs[user_type][action]
 
+def predict_response(user_type, prev_action, prev_response, action):
+    row = pd.DataFrame([{
+        "user_type": user_type,
+        "prev_action": prev_action,
+        "prev_response": prev_response,
+        "action": action
+    }])
+
+    row_encoded = pd.get_dummies(row)
+
+    # Align with training columns
+    row_encoded = row_encoded.reindex(columns=columns, fill_value=0)
+
+    prob = model.predict_proba(row_encoded)[0][1]
+
+    return prob
+
 def simple_model(user_type, action):
     if user_type == "deal_hunter":
         return {"show_offer": 0.7, "show_video": 0.2, "send_notification": 0.4}[action]
@@ -32,25 +59,41 @@ def simple_model(user_type, action):
     else:
         return {"show_offer": 0.3, "show_video": 0.3, "send_notification": 0.2}[action]
 
-def get_next_best_action(user_type):
-    scores = [(a, simple_model(user_type, a)) for a in actions]
+def get_next_best_action(user_type, prev_action, prev_response):
+    scores = []
+
+    for action in actions:
+        prob = predict_response(user_type, prev_action, prev_response, action)
+        scores.append((action, prob))
+
     return max(scores, key=lambda x: x[1])[0]
 
 def simulate_ai():
     results = []
+
     for _, user in users.iterrows():
         user_type = user["user_type"]
         cumulative = 0
+
+        prev_action = "none"
+        prev_response = 0
+
         for day in range(num_days):
-            action = get_next_best_action(user_type)
+            action = get_next_best_action(user_type, prev_action, prev_response)
+
             response = int(get_response(user_type, action))
             cumulative += response
+
             results.append({
                 "user_id": user["user_id"],
                 "day": day,
                 "strategy": "AI",
                 "cumulative": cumulative
             })
+
+            prev_action = action
+            prev_response = response
+
     return pd.DataFrame(results)
 
 def simulate_rule():
